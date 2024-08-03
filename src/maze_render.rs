@@ -3,7 +3,11 @@ use crate::player::Player;
 use nalgebra_glm::Vec2;
 use crate::raycaster::cast_ray;
 
-pub fn render_maze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player) {
+pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player) {
+    let cell_size = 50; // Tamaño de cada celda del laberinto
+}
+
+pub fn render_2Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player) {
     let cell_size = 50; // Tamaño de cada celda del laberinto
 
     framebuffer.clear(); // Color de fondo: #0c0b38

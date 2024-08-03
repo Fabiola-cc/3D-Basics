@@ -9,26 +9,47 @@ use std::time::Duration;
 use minifb::{Key, Window, WindowOptions};
 use crate::player::Player;
 
-pub fn process_events(window: &Window, player: &mut Player) {
+pub fn process_events(window: &Window, player: &mut Player, maze: &[Vec<char>], cell_size: usize) {
     const MOVE_SPEED: f32 = 0.1; // Ajusta la velocidad de movimiento si es necesario
     const ROTATION_SPEED: f32 = std::f32::consts::PI / 30.0; // Ajusta la velocidad de rotación si es necesario
-    
+
     if window.is_key_down(Key::Left) {
         player.angle -= ROTATION_SPEED;
     }
-    
+
     if window.is_key_down(Key::Right) {
         player.angle += ROTATION_SPEED;
     }
-    
+
+    let mut new_x = player.pos.x;
+    let mut new_y = player.pos.y;
+
     if window.is_key_down(Key::Up) {
-        player.pos.x += MOVE_SPEED * player.angle.cos();
-        player.pos.y += MOVE_SPEED * player.angle.sin();
+        new_x += MOVE_SPEED * player.angle.cos();
+        new_y += MOVE_SPEED * player.angle.sin();
     }
-    
+
     if window.is_key_down(Key::Down) {
-        player.pos.x -= MOVE_SPEED * player.angle.cos();
-        player.pos.y -= MOVE_SPEED * player.angle.sin();
+        new_x -= MOVE_SPEED * player.angle.cos();
+        new_y -= MOVE_SPEED * player.angle.sin();
+    }
+
+    // Convertir las nuevas coordenadas a índices de celda
+    let new_i = (new_x as f32).floor() as isize;
+    let new_j = (new_y as f32).floor() as isize;
+
+    // Verificar si la nueva posición está dentro de los límites del laberinto
+    if new_i >= 0 && new_j >= 0 && new_i < maze[0].len() as isize && new_j < maze.len() as isize {
+        // Verificar si la nueva celda es un espacio vacío
+        if maze[new_j as usize][new_i as usize] == ' ' {
+            // Actualizar la posición del jugador solo si no hay colisión
+            player.pos.x = new_x;
+            player.pos.y = new_y;
+        } else {
+            println!("Collision at: ({}, {})", new_i, new_j);
+        }
+    } else {
+        println!("Out of bounds: ({}, {})", new_i, new_j);
     }
 }
 
@@ -63,16 +84,26 @@ fn main() {
         }
     };
 
+    let mut mode = "2D";
     while window.is_open() {
         // Escuchar entradas
         if window.is_key_down(Key::Escape) {
             break;
         }
+        if window.is_key_down(Key::M) {
+            mode = if mode == "2D" {"3D"} else {"2D"};
+            println!("{}", mode)
+        }
+        process_events(&window, &mut player, &maze, cell_size);
 
+
+        framebuffer.clear();
         // Renderizar el laberinto y el jugador
-        maze_render::render_maze(&mut framebuffer, &maze, &player);
-        
-        process_events(&window, &mut player);
+        if mode == "2D"{
+            maze_render::render_2Dmaze(&mut framebuffer, &maze, &player);
+        } else {
+            maze_render::render_3Dmaze(&mut framebuffer, &maze, &player);
+        }
 
         // Convertir los datos del framebuffer a un buffer u32
         let buffer = framebuffer.to_u32_buffer();

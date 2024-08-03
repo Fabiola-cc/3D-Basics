@@ -42,9 +42,7 @@ pub fn cast_ray(
         }
 
         if draw_line {
-          let ray_x = (x as f32);
-          let ray_y = (y as f32);
-          framebuffer.point(ray_x, ray_y);
+          framebuffer.point(x as f32, y as f32);
         }
 
         if maze[j][i] != ' ' {
