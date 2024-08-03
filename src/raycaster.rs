@@ -1,40 +1,65 @@
 use crate::framebuffer::Framebuffer;
 use crate::player::Player;
-use nalgebra_glm::Vec2;
+
+pub struct Intersect {
+    pub distance: f32,
+    pub impact: char,
+}
 
 pub fn cast_ray(
     framebuffer: &mut Framebuffer,
     maze: &[Vec<char>],
     player: &Player,
     a: f32,
-    block_size: usize,
-) {
+    cell_size: usize,
+    draw_line: bool,
+) -> Intersect {
     let mut d = 0.0;
-
-    framebuffer.set_current_color(0xFFDDDD);
+    
+    framebuffer.set_current_color(0xFFFFFF);
+    
+    let maze_width = maze[0].len();
+    let maze_height = maze.len();
 
     loop {
         let cos = d * a.cos();
         let sin = d * a.sin();
-        let x = (player.pos.x + cos) as isize;
-        let y = (player.pos.y + sin) as isize;
+        
+        let x = ((player.pos.x + cos) * cell_size as f32) as isize;
+        let y = ((player.pos.y + sin) * cell_size as f32) as isize;
 
-        // convert our coordinates in pixels to indices in the maze array
-        let i = x / block_size as isize;
-        let j = y / block_size as isize;
-
-        // Check if i and j are within bounds
-        if i < 0 || i >= maze[0].len() as isize || j < 0 || j >= maze.len() as isize {
-            return;
+        // Asegurarse de que x y y están dentro de los límites del framebuffer
+        if x < 0 || y < 0 || x >= framebuffer.width as isize || y >= framebuffer.height as isize {
+            break;
         }
 
-        // if the current item is a wall, we break the loop
-        if maze[j as usize][i as usize] != ' ' {
-            return;
+        let i = (x / cell_size as isize) as usize;
+        let j = (y / cell_size as isize) as usize;
+
+        // Asegurarse de que i y j están dentro de los límites del laberinto
+        if i >= maze_width || j >= maze_height {
+          break;
         }
 
-        framebuffer.point(x as f32, y as f32);
+        if draw_line {
+          let ray_x = (x as f32);
+          let ray_y = (y as f32);
+          framebuffer.point(ray_x, ray_y);
+        }
 
-        d += 10.0;
+        if maze[j][i] != ' ' {
+            return Intersect {
+                distance: d,
+                impact: maze[j][i],
+            };
+        }
+
+        d += 0.3; // Ajustar la resolución del incremento de d para mayor precisión
+    }
+
+    // En caso de no encontrar ninguna colisión, devolver un valor por defecto
+    Intersect {
+        distance: d,
+        impact: ' ',
     }
 }

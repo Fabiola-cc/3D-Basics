@@ -3,8 +3,8 @@ use nalgebra_glm::Vec2;
 
 #[derive(Debug)]
 pub struct Framebuffer {
-    width: usize,
-    height: usize,
+    pub width: usize,
+    pub height: usize,
     data: Vec<u8>,
     current_color: (u8, u8, u8),
 }
@@ -28,14 +28,6 @@ impl Framebuffer {
             pixel[1] = color.1;
             pixel[2] = color.2;
         });
-    }
-
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn height(&self) -> usize {
-        self.height
     }
 
     pub fn set_current_color(&mut self, hex: u32) {
@@ -62,7 +54,7 @@ impl Framebuffer {
             return;
         }
         let flipped_y = self.height - 1 - y;  // Invertir el valor de y
-        let index = (flipped_y * self.width + x) * 3;
+        let index = (y * self.width + x) * 3;
         self.data[index] = r;
         self.data[index + 1] = g;
         self.data[index + 2] = b;
@@ -75,7 +67,7 @@ impl Framebuffer {
         let x = x as usize;
         let y = y as usize;
         let flipped_y = self.height - 1 - y;  // Invertir el valor de y
-        let index = (flipped_y * self.width + x) * 3;
+        let index = (y * self.width + x) * 3;
         Some((self.data[index], self.data[index + 1], self.data[index + 2]))
     }
 
