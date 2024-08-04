@@ -84,7 +84,7 @@ fn main() {
         }
     };
 
-    let mut mode = "2D";
+    let mut mode = "3D";
     while window.is_open() {
         // Escuchar entradas
         if window.is_key_down(Key::Escape) {

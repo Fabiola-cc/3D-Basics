@@ -52,7 +52,7 @@ pub fn cast_ray(
             };
         }
 
-        d += 0.3; // Ajustar la resolución del incremento de d para mayor precisión
+        d += 0.01; // Ajustar la resolución del incremento de d para mayor precisión
     }
 
     // En caso de no encontrar ninguna colisión, devolver un valor por defecto

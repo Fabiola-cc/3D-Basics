@@ -5,7 +5,34 @@ use crate::raycaster::cast_ray;
 
 pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player) {
     let cell_size = 50; // Tamaño de cada celda del laberinto
+    let num_rays = framebuffer.width;
+
+    let hw = framebuffer.width as f32 / 2.0; // precalculated half width
+    let hh = framebuffer.height as f32 / 2.0; // precalculated half height
+    framebuffer.set_background_color(0x0c0b38);
+    framebuffer.set_current_color(0xebdc7f);
+
+    for i in 0 .. num_rays {
+        let current_ray = i as f32 / num_rays as f32; // current ray divided by total rays
+        let a = player.angle - (player.fov / 2.0) + (player.fov * current_ray);
+        let intersect = cast_ray(framebuffer, maze, player, a, cell_size, false);
+
+        let stake_height = framebuffer.height as f32 / intersect.distance;
+        let stake_top = (hh - (stake_height / 2.0)).max(0.0) as usize;
+        let stake_bottom = (hh + (stake_height / 2.0)).min(framebuffer.height as f32) as usize;
+
+        for y in stake_top .. stake_bottom {
+            if i < framebuffer.width as usize && y < framebuffer.height as usize {
+                framebuffer.point(i as f32, y as f32);
+            } else {
+                println!("Point out of bounds: i = {}, y = {}", i, y);
+            }
+        }
+     
+    }
 }
+
+
 
 pub fn render_2Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player) {
     let cell_size = 50; // Tamaño de cada celda del laberinto
