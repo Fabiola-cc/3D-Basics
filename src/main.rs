@@ -8,6 +8,7 @@ mod bmp;
 use std::time::Duration;
 use minifb::{Key, Window, WindowOptions};
 use crate::player::Player;
+use crate::maze_render::{render_2Dmaze, render_3Dmaze, render_minimap};
 
 pub fn process_events(window: &Window, player: &mut Player, maze: &[Vec<char>], cell_size: usize) {
     const MOVE_SPEED: f32 = 0.1; // Ajusta la velocidad de movimiento si es necesario
@@ -100,9 +101,10 @@ fn main() {
         framebuffer.clear();
         // Renderizar el laberinto y el jugador
         if mode == "2D"{
-            maze_render::render_2Dmaze(&mut framebuffer, &maze, &player);
+            render_2Dmaze(&mut framebuffer, &maze, &player);
         } else {
-            maze_render::render_3Dmaze(&mut framebuffer, &maze, &player);
+            render_3Dmaze(&mut framebuffer, &maze, &player);
+            render_minimap(&mut framebuffer, &maze, &player, cell_size, 0.3);
         }
 
         // Convertir los datos del framebuffer a un buffer u32

@@ -129,7 +129,7 @@ impl Framebuffer {
                 y += sy;
             }
         }
-    }
+    }    
 }
 
 impl fmt::Display for Framebuffer {
