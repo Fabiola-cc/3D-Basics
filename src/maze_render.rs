@@ -104,7 +104,7 @@ pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player:
             for dx in 0..minimap_cell_size as isize {
                 for dy in 0..minimap_cell_size as isize {
                     
-                    if maze[j][i] != ' ' {
+                    if maze[j][i] != ' ' || maze[j][i] == 'g'{
                         // Cambia el color actual a color del rectángulo
                         framebuffer.set_current_color(0xf06a60);
                         framebuffer.point(x + dx as f32, y + dy as f32);
