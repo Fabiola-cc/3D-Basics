@@ -53,7 +53,7 @@ impl Framebuffer {
         if x >= self.width || y >= self.height {
             return;
         }
-        let flipped_y = self.height - 1 - y;  // Invertir el valor de y
+        //let flipped_y = self.height - 1 - y;  // Invertir el valor de y
         let index = (y * self.width + x) * 3;
         self.data[index] = r;
         self.data[index + 1] = g;
@@ -66,13 +66,9 @@ impl Framebuffer {
         }
         let x = x as usize;
         let y = y as usize;
-        let flipped_y = self.height - 1 - y;  // Invertir el valor de y
+        //let flipped_y = self.height - 1 - y;  // Invertir el valor de y
         let index = (y * self.width + x) * 3;
         Some((self.data[index], self.data[index + 1], self.data[index + 2]))
-    }
-
-    pub fn render_buffer(&self, filename: &str) -> std::io::Result<()> {
-        crate::bmp::write_bmp_file(filename, &self.data, self.width, self.height)
     }
 
     fn hex_to_rgb(hex: u32) -> (u8, u8, u8) {

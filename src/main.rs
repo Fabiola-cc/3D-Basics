@@ -3,15 +3,14 @@ mod from_file;
 mod maze_render;
 mod player;
 mod raycaster;
-mod bmp;
 
 use std::time::Duration;
 use minifb::{Key, Window, WindowOptions};
 use crate::player::Player;
 use crate::maze_render::{render_2Dmaze, render_3Dmaze, render_minimap};
 
-pub fn process_events(window: &Window, player: &mut Player, maze: &[Vec<char>], cell_size: usize) {
-    const MOVE_SPEED: f32 = 0.1; // Ajusta la velocidad de movimiento si es necesario
+pub fn process_events(window: &Window, player: &mut Player, maze: &[Vec<char>]) {
+    const MOVE_SPEED: f32 = 0.05; // Ajusta la velocidad de movimiento si es necesario
     const ROTATION_SPEED: f32 = std::f32::consts::PI / 30.0; // Ajusta la velocidad de rotación si es necesario
 
     if window.is_key_down(Key::Left) {
@@ -63,7 +62,7 @@ fn main() {
     let framebuffer_width = 700;
     let framebuffer_height = 500;
 
-    let frame_delay = Duration::from_millis(100);
+    let frame_delay = Duration::from_millis(10);
 
     let mut framebuffer = framebuffer::Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
@@ -95,7 +94,7 @@ fn main() {
             mode = if mode == "2D" {"3D"} else {"2D"};
             println!("{}", mode)
         }
-        process_events(&window, &mut player, &maze, cell_size);
+        process_events(&window, &mut player, &maze);
 
 
         framebuffer.clear();
