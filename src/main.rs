@@ -74,16 +74,16 @@ fn main() {
 
     let frame_delay = Duration::from_millis(10);
 
-    // // Crear un nuevo stream de salida
-    // let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    // Crear un nuevo stream de salida
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     
-    // // Abrir el archivo de audio
-    // let file = File::open("Fluffing-a-Duck.mp3").expect("Failed to open audio file");
-    // let file = BufReader::new(file); // Asegurar que el archivo es compatible
-    // let source = Decoder::new(file).expect("Failed to decode audio file");
+    // Abrir el archivo de audio
+    let file = File::open("Fluffing-a-Duck.ogg").expect("Failed to open audio file");
+    let file = BufReader::new(file); // Asegurar que el archivo es compatible
+    let source = Decoder::new(file).expect("Failed to decode audio file");
     
-    // // Reproducir el audio en un bucle infinito
-    // stream_handle.play_raw(source.convert_samples().repeat_infinite()).expect("Failed to play audio");
+    // Reproducir el audio en un bucle infinito
+    stream_handle.play_raw(source.convert_samples().repeat_infinite()).expect("Failed to play audio");
 
     let mut framebuffer = framebuffer::Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
