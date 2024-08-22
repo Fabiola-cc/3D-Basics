@@ -1,16 +1,17 @@
 use crate::framebuffer::Framebuffer;
 use crate::player::Player;
 use crate::raycaster::cast_ray;
+use image::{DynamicImage, GenericImageView};
 
-pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player) {
-    let cell_size = 50; // Tamaño de cada celda del laberinto
+pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player, sprite: &DynamicImage, frame: usize) {
+    let cell_size = 40; // Tamaño de cada celda del laberinto
     let num_rays = framebuffer.width;
 
-    let hh = framebuffer.height as f32 / 2.0; // precalculated half height
+    let hh = framebuffer.height as f32 / 2.0; // Precalculado medio altura
     framebuffer.set_background_color(0xece5c8);
 
     for i in 0..num_rays {
-        let current_ray = i as f32 / num_rays as f32; // current ray divided by total rays
+        let current_ray = i as f32 / num_rays as f32; // Rayo actual dividido por el total de rayos
         let a = player.angle - (player.fov / 2.0) + (player.fov * current_ray);
         let intersect = cast_ray(framebuffer, maze, player, a, cell_size, false);
 
@@ -34,9 +35,19 @@ pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
             }
         }
     }
+
+    framebuffer.set_current_color(0xFFFFFF);
+    // Definir la posición fija del sprite en el laberinto
+    let sprite_position = (2.0, 3.0); // Coordenadas fijas
+
+    // Dentro de tu ciclo de renderizado
+    let scale = 0.10; // Escala al 100% del tamaño original
+    render_fixed_sprite(framebuffer, player, sprite, sprite_position, scale);
 }
 
-pub fn render_2Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player) {
+
+pub fn render_2Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player,
+    sprite_position: Option<(usize, usize)>) {
     let cell_size = 50; // Tamaño de cada celda del laberinto
 
     framebuffer.clear();
@@ -64,11 +75,30 @@ pub fn render_2Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
         }
     }
 
+    // Dibujar al sprite si existe
+    let sprite_scale = 0.15;
+    if let Some((sprite_x, sprite_y)) = sprite_position {
+        framebuffer.set_current_color(0xffd700); // Color del sprite (dorado)
+
+        let scaled_cell_size = (cell_size as f32 * sprite_scale) as usize;
+        let sprite_offset_x = (cell_size - scaled_cell_size) / 2;
+        let sprite_offset_y = (cell_size - scaled_cell_size) / 2;
+
+        for dx in 0..scaled_cell_size {
+            for dy in 0..scaled_cell_size {
+                framebuffer.point(
+                    sprite_x as f32 * cell_size as f32 + dx as f32 + sprite_offset_x as f32,
+                    sprite_y as f32 * cell_size as f32 + dy as f32 + sprite_offset_y as f32,
+                );
+            }
+        }
+    }
+
     // Dibujar al jugador
     render_player(framebuffer, player, cell_size, &maze);
 }
 
-pub fn render_player(framebuffer: &mut Framebuffer, player: &Player, cell_size: usize, maze: &[Vec<char>]) {
+fn render_player(framebuffer: &mut Framebuffer, player: &Player, cell_size: usize, maze: &[Vec<char>]) {
     let player_color = 0x4174a3;
     framebuffer.set_current_color(player_color);
 
@@ -88,7 +118,8 @@ pub fn render_player(framebuffer: &mut Framebuffer, player: &Player, cell_size: 
     }
 }
 
-pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player, cell_size: usize, mini_map_scale: f32) {
+pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>], 
+    player: &Player, cell_size: usize, mini_map_scale: f32, sprite_position: Option<(usize, usize)>) {
     let map_offset_x = 0; // Posición X del mini mapa en la pantalla
     let map_offset_y = 0; // Posición Y del mini mapa en la pantalla
 
@@ -117,7 +148,96 @@ pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player:
         }
     }
 
+    // Dibujar al sprite si existe
+    let sprite_scale = 0.15;
+    if let Some((sprite_x, sprite_y)) = sprite_position {
+        framebuffer.set_current_color(0xffd700); // Color del sprite (dorado)
+
+        let scaled_minimap_cell_size = (minimap_cell_size as f32 * sprite_scale) as usize;
+        let sprite_offset_x = (minimap_cell_size - scaled_minimap_cell_size) / 2;
+        let sprite_offset_y = (minimap_cell_size - scaled_minimap_cell_size) / 2;
+
+        for dx in 0..scaled_minimap_cell_size {
+            for dy in 0..scaled_minimap_cell_size {
+                framebuffer.point(
+                    map_offset_x as f32 + sprite_x as f32 * minimap_cell_size as f32 + dx as f32 + sprite_offset_x as f32,
+                    map_offset_y as f32 + sprite_y as f32 * minimap_cell_size as f32 + dy as f32 + sprite_offset_y as f32,
+                );
+            }
+        }
+    }
 
     // Dibujar al jugador
     render_player(framebuffer, player, minimap_cell_size, &maze);
+}
+
+fn render_billboard(
+    framebuffer: &mut Framebuffer, 
+    player: &Player, 
+    sprite: &DynamicImage, 
+    position: (f32, f32, f32), 
+    scale: f32 // Escala para ajustar el tamaño del sprite
+) {
+    let player_dir = (player.angle.cos(), player.angle.sin());
+    let sprite_dir = (position.0 - player.pos.x, position.1 - player.pos.y);
+    let angle = sprite_dir.1.atan2(sprite_dir.0) - player.angle;
+
+    // Convertir la posición 3D en coordenadas de pantalla
+    let screen_x = (framebuffer.width as f32 / 2.0) * (1.0 + angle / player.fov);
+    let screen_y = framebuffer.height as f32 / 2.0;
+
+    let sprite_width = (sprite.width() as f32 * scale) as usize;
+    let sprite_height = (sprite.height() as f32 * scale) as usize;
+
+    // Dibujar el sprite en la pantalla
+    for y in 0..sprite_height {
+        for x in 0..sprite_width {
+            let original_x = (x as f32 / scale) as u32;
+            let original_y = (y as f32 / scale) as u32;
+
+            let pixel = sprite.get_pixel(original_x, original_y);
+            if pixel[3] > 0 { // Solo dibujar píxeles no transparentes
+                framebuffer.point(screen_x + x as f32, screen_y + y as f32);
+            }
+        }
+    }
+}
+
+fn render_fixed_sprite(
+    framebuffer: &mut Framebuffer, 
+    player: &Player, 
+    sprite: &DynamicImage, 
+    sprite_position: (f32, f32), 
+    scale: f32
+) {
+    // Coordenadas de la posición del sprite respecto a la posición del jugador
+    let rel_x = sprite_position.0 - player.pos.x;
+    let rel_y = sprite_position.1 - player.pos.y;
+
+    // Calcular la distancia del jugador al sprite
+    let distance = (rel_x.powi(2) + rel_y.powi(2)).sqrt();
+
+    // Renderizar solo si el sprite está frente al jugador
+    let angle_to_sprite = rel_y.atan2(rel_x) - player.angle;
+
+    if angle_to_sprite.abs() < player.fov / 2.0 {
+        let screen_x = (framebuffer.width as f32 / 2.0) * (1.0 + angle_to_sprite / player.fov);
+        let sprite_width = (sprite.width() as f32 * scale / distance) as usize;
+        let sprite_height = (sprite.height() as f32 * scale / distance) as usize;
+
+        let screen_y = framebuffer.height as f32 / 2.0 - sprite_height as f32 / 2.0;
+
+        // Dibujar el sprite en la pantalla
+        for y in 0..sprite_height {
+            for x in 0..sprite_width {
+                let original_x = (x as f32 / (sprite_width as f32 / sprite.width() as f32)) as u32;
+                let original_y = (y as f32 / (sprite_height as f32 / sprite.height() as f32)) as u32;
+
+                let pixel = sprite.get_pixel(original_x, original_y);
+                if pixel[3] > 0 { // Solo dibujar píxeles no transparentes
+                    framebuffer.point(screen_x + x as f32, screen_y + y as f32);
+                }
+            }
+        }
+    }
 }

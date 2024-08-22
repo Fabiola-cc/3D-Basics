@@ -4,15 +4,18 @@ mod maze_render;
 mod player;
 mod raycaster;
 mod render_extras;
+extern crate image;
 
 use rodio::{Decoder, OutputStream, source::Source};
 use std::fs::File;
 use std::io::BufReader;
-use std::time::Duration;
+use std::time::{Instant, Duration};
 use minifb::{Key, Window, WindowOptions};
 use crate::player::Player;
 use crate::maze_render::{render_2Dmaze, render_3Dmaze, render_minimap};
 use crate::render_extras::{render_welcome_screen, render_game_over_screen, player_reaches_goal};
+
+const FPS_UPDATE_INTERVAL: Duration = Duration::from_secs(1);
 
 pub fn process_events(window: &Window, player: &mut Player, maze: &[Vec<char>]) {
     const MOVE_SPEED: f32 = 0.05; // Ajusta la velocidad de movimiento si es necesario
@@ -72,7 +75,11 @@ fn main() {
     let framebuffer_width = 700;
     let framebuffer_height = 500;
 
-    let frame_delay = Duration::from_millis(10);
+    let frame_delay = Duration::from_millis(5);
+    
+    // Tiempo inicial
+    let mut last_update = Instant::now();
+    let mut fps = 0;
 
     // Crear un nuevo stream de salida
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
@@ -82,6 +89,8 @@ fn main() {
     let file = BufReader::new(file); // Asegurar que el archivo es compatible
     let source = Decoder::new(file).expect("Failed to decode audio file");
     
+    let sprite = image::open("key.png").unwrap();
+
     // Reproducir el audio en un bucle infinito
     stream_handle.play_raw(source.convert_samples().repeat_infinite()).expect("Failed to play audio");
 
@@ -100,8 +109,24 @@ fn main() {
 
     let mut mode = "3D";
     let mut state = GameState::Welcome; // Inicialmente en la pantalla de bienvenida
+    let mut frame = 0;
+
+    // Definir la posición inicial del sprite en el laberinto
+    let mut sprite_position: Option<(usize, usize)> = Some((2, 3));
+    let mut collected_key = false;
 
     while window.is_open() {
+        let start_time = Instant::now();
+        if start_time.duration_since(last_update) >= FPS_UPDATE_INTERVAL {
+            // Actualiza FPS y reinicia el contador
+            fps = frame;
+            frame = 0;
+            last_update = start_time;
+            
+            // Muestra el FPS en la pantalla
+            println!("FPS: {}", fps);
+        }
+
         match state {
             GameState::Welcome => {
                 render_welcome_screen(&mut framebuffer);
@@ -114,12 +139,20 @@ fn main() {
                 // Lógica del juego
                 process_events(&window, &mut player, &maze);
 
+                if let Some((sprite_x, sprite_y)) = sprite_position {
+                    if player.pos.x.round() == sprite_x as f32 && player.pos.y.round() == sprite_y as f32 {
+                        sprite_position = None; // Eliminar el sprite
+                        collected_key = false;
+                        println!("{}", collected_key);
+                    }
+                }
+
                 framebuffer.clear();
                 if mode == "2D" {
-                    render_2Dmaze(&mut framebuffer, &maze, &player);
+                    render_2Dmaze(&mut framebuffer, &maze, &player, sprite_position);
                 } else {
-                    render_3Dmaze(&mut framebuffer, &maze, &player);
-                    render_minimap(&mut framebuffer, &maze, &player, cell_size, 0.3);
+                    render_3Dmaze(&mut framebuffer, &maze, &player, &sprite, frame);
+                    render_minimap(&mut framebuffer, &maze, &player, cell_size, 0.3, sprite_position);
                 }
                 
                 if window.is_key_down(Key::M) {
@@ -132,8 +165,12 @@ fn main() {
                 
                 // Condición para pasar al estado de fin del juego
                 if player_reaches_goal(&player, &maze) {
-                    state = GameState::GameOver;
+                    if !collected_key {
+                        state = GameState::GameOver;
+                    }
                 }
+                
+                frame += 1; // Avanzar el cuadro de animación
             }
             GameState::GameOver => {
                 render_game_over_screen(&mut framebuffer);
