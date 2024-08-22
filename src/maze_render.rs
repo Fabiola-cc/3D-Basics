@@ -4,12 +4,13 @@ use crate::raycaster::cast_ray;
 use image::{DynamicImage, GenericImageView, Rgba};
 
 pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player, 
-    sprites: &Vec<DynamicImage>, sprite_position: Option<(usize, usize)>, frame: usize) {
+    sprites: &Vec<DynamicImage>, sprite_position: Option<(usize, usize)>, frame: usize,
+    clue_position: Option<(usize, usize)>, clue_sprite: &DynamicImage) {
     let cell_size = 40; // Tamaño de cada celda del laberinto
     let num_rays = framebuffer.width;
 
     let hh = framebuffer.height as f32 / 2.0; // Precalculado medio altura
-    framebuffer.set_background_color(0xece5c8);
+    framebuffer.set_background_color(0xCDE5D7);
 
     for i in 0..num_rays {
         let current_ray = i as f32 / num_rays as f32; // Rayo actual dividido por el total de rayos
@@ -18,10 +19,10 @@ pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
 
         // Cambia el color de acuerdo al tipo de celda que se ha intersectado
         match intersect.impact {
-            '+' | '-' | '|' => framebuffer.set_current_color(0xf06a60),
-            'p' => framebuffer.set_current_color(0x00FF00), // Verde para punto de inicio
-            'g' => framebuffer.set_current_color(0xfb8324),
-            _ => framebuffer.set_current_color(0xFFFFFF),   // Blanco para espacios vacíos o no definidos
+            '+' | '-' | '|' => framebuffer.set_current_color(0x9EA1D4),
+            'p' => framebuffer.set_current_color(0x00FF00),
+            'g' => framebuffer.set_current_color(0x4AADAA),
+            _ => framebuffer.set_current_color(0xFFFFFF), 
         }
 
         let stake_height = framebuffer.height as f32 / intersect.distance;
@@ -39,7 +40,7 @@ pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
 
     framebuffer.set_current_color(0xFFFFFF);
 
-    let scale = 1.0;
+    let mut scale = 1.0;
     if let Some((sprite_x, sprite_y)) = sprite_position {
         let sprite_pos = (
             sprite_x as f32 + 0.5, // Centro de la celda
@@ -53,8 +54,16 @@ pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
         // Renderizar el frame actual
         render_sprite(framebuffer, player, current_sprite, sprite_pos, scale);
     }
+    
+    if let Some((clue_x, clue_y)) = clue_position {
+        let sprite_pos = (
+            clue_x as f32 + 0.5,
+            clue_y as f32 - 0.25
+        );
+    
+        render_text(framebuffer, clue_sprite, sprite_pos, scale);
+    }
 }
-
 
 pub fn render_2Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player,
     sprite_position: Option<(usize, usize)>) {
@@ -86,7 +95,7 @@ pub fn render_2Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
     }
 
     // Dibujar al sprite si existe
-    let sprite_scale = 0.15;
+    let sprite_scale = 0.25;
     if let Some((sprite_x, sprite_y)) = sprite_position {
         framebuffer.set_current_color(0xffd700); // Color del sprite (dorado)
 
@@ -144,9 +153,10 @@ pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>],
             // Dibuja líneas horizontales y verticales para formar el rectángulo
             for dx in 0..minimap_cell_size as isize {
                 for dy in 0..minimap_cell_size as isize {
-                    
-                    if maze[j][i] != ' ' || maze[j][i] == 'g'{
-                        // Cambia el color actual a color del rectángulo
+                    if maze[j][i] == 'g' {
+                        framebuffer.set_current_color(0xfb8324); 
+                        framebuffer.point(x + dx as f32, y + dy as f32);
+                    } else if maze[j][i] != ' ' {
                         framebuffer.set_current_color(0xf06a60);
                         framebuffer.point(x + dx as f32, y + dy as f32);
                     } else {
@@ -159,7 +169,7 @@ pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>],
     }
 
     // Dibujar al sprite si existe
-    let sprite_scale = 0.15;
+    let sprite_scale = 0.25;
     if let Some((sprite_x, sprite_y)) = sprite_position {
         framebuffer.set_current_color(0xffd700); // Color del sprite (dorado)
 
@@ -181,13 +191,7 @@ pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>],
     render_player(framebuffer, player, minimap_cell_size, &maze);
 }
 
-fn render_sprite(
-    framebuffer: &mut Framebuffer, 
-    player: &Player, 
-    sprite: &DynamicImage, 
-    sprite_position: (f32, f32), 
-    scale: f32
-) {
+fn render_sprite(framebuffer: &mut Framebuffer, player: &Player, sprite: &DynamicImage, sprite_position: (f32, f32), scale: f32) {
     // Coordenadas de la posición del sprite respecto a la posición del jugador
     let rel_x = sprite_position.0 - player.pos.x;
     let rel_y = sprite_position.1 - player.pos.y;
@@ -217,6 +221,39 @@ fn render_sprite(
                     let color = ((data[0] as u32) << 16) | ((data[1] as u32) << 8) | (data[2] as u32);
                     framebuffer.set_current_color(color);
                     framebuffer.point(screen_x + x as f32, screen_y + y as f32);
+                }
+            }
+        }
+    }
+}
+
+fn render_text(framebuffer: &mut Framebuffer, text: &DynamicImage, position: (f32, f32), scale: f32) {
+    framebuffer.set_current_color(0x000000);
+
+    let scaled_width = (text.width() as f32 * scale) as u32;
+    let scaled_height = (text.height() as f32 * scale) as u32;
+
+    let image_center_x = (scaled_width / 2) as f32;
+    let image_center_y = (scaled_height / 2) as f32;
+
+    for y in 0..scaled_height {
+        for x in 0..scaled_width {
+            // Mapear las coordenadas escaladas a las coordenadas originales
+            let original_x = (x as f32 / scale).round() as u32;
+            let original_y = (y as f32 / scale).round() as u32;
+
+            if original_x < text.width() && original_y < text.height() {
+                let pixel = text.get_pixel(original_x, original_y);
+                let Rgba(data) = pixel;
+
+                // Si el canal alfa es mayor que cero, renderiza el píxel
+                if data[3] > 0 {
+                    let color = ((data[0] as u32) << 16) | ((data[1] as u32) << 8) | (data[2] as u32);
+                    framebuffer.set_current_color(color);
+                    framebuffer.point(
+                        position.0 - image_center_x + x as f32,
+                        position.1 - image_center_y + y as f32,
+                    );
                 }
             }
         }

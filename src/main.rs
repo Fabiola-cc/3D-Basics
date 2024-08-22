@@ -90,6 +90,7 @@ fn main() {
         image::open("images/Key3.png").unwrap(),
         image::open("images/Key4.png").unwrap(),
     ];
+    let clue_sprite = image::open("images/Missing_key.png").unwrap();
 
     let mut framebuffer = framebuffer::Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
@@ -109,7 +110,8 @@ fn main() {
     let mut frame = 0;
 
     // Definir la posición inicial del sprite en el laberinto
-    let mut sprite_position: Option<(usize, usize)> = Some((2, 3));
+    let mut sprite_position: Option<(usize, usize)> = Some((8, 7));
+    let mut clue_position: Option<(usize, usize)> = None;
     let mut collected_key = false;
 
     let (_stream, stream_handle) = OutputStream::try_default().unwrap(); // Crear el OutputStream una vez
@@ -155,7 +157,7 @@ fn main() {
                 if mode == "2D" {
                     render_2Dmaze(&mut framebuffer, &maze, &player, sprite_position);
                 } else {
-                    render_3Dmaze(&mut framebuffer, &maze, &player, &sprites, sprite_position, frame);
+                    render_3Dmaze(&mut framebuffer, &maze, &player, &sprites, sprite_position, frame, clue_position, &clue_sprite);
                     render_minimap(&mut framebuffer, &maze, &player, cell_size, 0.3, sprite_position);
                 }
                 
@@ -166,12 +168,12 @@ fn main() {
                 
                 // Mostrar el contenido del framebuffer
                 window.update_with_buffer(&framebuffer.to_u32_buffer(), framebuffer_width, framebuffer_height).unwrap();
-                
                 // Condición para pasar al estado de fin del juego
                 if player_reaches_goal(&player, &maze) {
-                    if !collected_key {
+                    if collected_key {
                         state = GameState::GameOver;
                     }
+                    clue_position = Some((550, 50));
                 }
                 
                 frame += 1; // Avanzar el cuadro de animación
