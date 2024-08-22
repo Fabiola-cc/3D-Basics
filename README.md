@@ -34,4 +34,4 @@ Pulsa Espacio para interactuar con la pantalla de bienvenida y pasar a la siguie
 Navega a través del laberinto y recolecta la llave para ganar el juego.
 
 ## Video de resultado
-[Puedes ver como resultó con este video](https://github.com/Fabiola-cc/Basics-3D/blob/main/Maze_result.mp4)
+[![Ver video](https://img.youtube.com/vi/s9_IlKLblx4/0.jpg)](https://youtu.be/s9_IlKLblx4)
