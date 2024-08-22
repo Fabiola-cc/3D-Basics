@@ -3,7 +3,8 @@ use crate::player::Player;
 use crate::raycaster::cast_ray;
 use image::{DynamicImage, GenericImageView};
 
-pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player, sprite: &DynamicImage, frame: usize) {
+pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player, 
+    sprite: &DynamicImage, sprite_position: Option<(usize, usize)>, frame: usize) {
     let cell_size = 40; // Tamaño de cada celda del laberinto
     let num_rays = framebuffer.width;
 
@@ -37,12 +38,16 @@ pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
     }
 
     framebuffer.set_current_color(0xFFFFFF);
-    // Definir la posición fija del sprite en el laberinto
-    let sprite_position = (2.0, 3.0); // Coordenadas fijas
 
     // Dentro de tu ciclo de renderizado
     let scale = 0.10; // Escala al 100% del tamaño original
-    render_fixed_sprite(framebuffer, player, sprite, sprite_position, scale);
+    if let Some((sprite_x, sprite_y)) = sprite_position {
+        let sprite_pos = (
+            sprite_x as f32 + 0.5, // Centro de la celda
+            sprite_y as f32 + 0.5
+        );
+        render_fixed_sprite(framebuffer, player, sprite, sprite_pos, scale);
+    }
 }
 
 

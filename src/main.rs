@@ -142,8 +142,8 @@ fn main() {
                 if let Some((sprite_x, sprite_y)) = sprite_position {
                     if player.pos.x.round() == sprite_x as f32 && player.pos.y.round() == sprite_y as f32 {
                         sprite_position = None; // Eliminar el sprite
-                        collected_key = false;
-                        println!("{}", collected_key);
+                        collected_key = true;
+                        println!("The Key has been collected");
                     }
                 }
 
@@ -151,7 +151,7 @@ fn main() {
                 if mode == "2D" {
                     render_2Dmaze(&mut framebuffer, &maze, &player, sprite_position);
                 } else {
-                    render_3Dmaze(&mut framebuffer, &maze, &player, &sprite, frame);
+                    render_3Dmaze(&mut framebuffer, &maze, &player, &sprite, sprite_position, frame);
                     render_minimap(&mut framebuffer, &maze, &player, cell_size, 0.3, sprite_position);
                 }
                 
