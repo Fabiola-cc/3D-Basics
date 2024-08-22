@@ -6,7 +6,7 @@ mod raycaster;
 mod render_extras;
 extern crate image;
 
-use rodio::{Decoder, OutputStream, source::Source};
+use rodio::{Decoder, OutputStream, source::Source, Sink};
 use std::fs::File;
 use std::io::BufReader;
 use std::time::{Instant, Duration};
@@ -15,6 +15,7 @@ use crate::player::Player;
 use image::DynamicImage;
 use crate::maze_render::{render_2Dmaze, render_3Dmaze, render_minimap};
 use crate::render_extras::{render_welcome_screen, render_game_over_screen, player_reaches_goal};
+use std::thread;
 
 const FPS_UPDATE_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -82,23 +83,13 @@ fn main() {
     let mut last_update = Instant::now();
     let mut fps = 0;
 
-    // Crear un nuevo stream de salida
-    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    
-    // Abrir el archivo de audio
-    let file = File::open("Fluffing-a-Duck.ogg").expect("Failed to open audio file");
-    let file = BufReader::new(file); // Asegurar que el archivo es compatible
-    let source = Decoder::new(file).expect("Failed to decode audio file");
-
+    //Obtención de imagenes para sprite
     let sprites: Vec<DynamicImage> = vec![
         image::open("images/Key1.png").unwrap(), 
         image::open("images/Key2.png").unwrap(), 
         image::open("images/Key3.png").unwrap(),
         image::open("images/Key4.png").unwrap(),
     ];
-    
-    // Reproducir el audio en un bucle infinito
-    stream_handle.play_raw(source.convert_samples().repeat_infinite()).expect("Failed to play audio");
 
     let mut framebuffer = framebuffer::Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
@@ -121,6 +112,15 @@ fn main() {
     let mut sprite_position: Option<(usize, usize)> = Some((2, 3));
     let mut collected_key = false;
 
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap(); // Crear el OutputStream una vez
+    let sink = Sink::try_new(&stream_handle).unwrap(); // Crear un Sink para manejar la música de fondo
+    let music_file = File::open("Fluffing-a-Duck.ogg").unwrap();
+    let music_source = Decoder::new(BufReader::new(music_file)).unwrap().repeat_infinite();
+    
+    // Reproducir la música de fondo en un hilo separado
+    sink.append(music_source);
+    sink.play();
+
     while window.is_open() {
         let start_time = Instant::now();
         if start_time.duration_since(last_update) >= FPS_UPDATE_INTERVAL {
@@ -128,9 +128,6 @@ fn main() {
             fps = frame;
             frame = 0;
             last_update = start_time;
-            
-            // Muestra el FPS en la pantalla
-            println!("FPS: {}", fps);
         }
 
         match state {
@@ -149,6 +146,7 @@ fn main() {
                     if player.pos.x.round() == sprite_x as f32 && player.pos.y.round() == sprite_y as f32 {
                         sprite_position = None; // Eliminar el sprite
                         collected_key = true;
+                        play_sound_effect(&stream_handle);
                         println!("The Key has been collected");
                     }
                 }
@@ -195,3 +193,12 @@ fn main() {
     }
 }
 
+fn play_sound_effect(stream_handle: &rodio::OutputStreamHandle) {
+    let file = File::open("collect.ogg").unwrap();
+    let source = Decoder::new(BufReader::new(file)).unwrap();
+    
+    // Reproducir el efecto de sonido
+    let sink = Sink::try_new(stream_handle).unwrap();
+    sink.append(source);
+    sink.detach(); // Detach permite que el sonido se reproduzca sin bloquear
+}
