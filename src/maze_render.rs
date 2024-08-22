@@ -1,10 +1,10 @@
 use crate::framebuffer::Framebuffer;
 use crate::player::Player;
 use crate::raycaster::cast_ray;
-use image::{DynamicImage, GenericImageView};
+use image::{DynamicImage, GenericImageView, Rgba};
 
 pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: &Player, 
-    sprite: &DynamicImage, sprite_position: Option<(usize, usize)>, frame: usize) {
+    sprites: &Vec<DynamicImage>, sprite_position: Option<(usize, usize)>, frame: usize) {
     let cell_size = 40; // Tamaño de cada celda del laberinto
     let num_rays = framebuffer.width;
 
@@ -39,14 +39,19 @@ pub fn render_3Dmaze(framebuffer: &mut Framebuffer, maze: &[Vec<char>], player: 
 
     framebuffer.set_current_color(0xFFFFFF);
 
-    // Dentro de tu ciclo de renderizado
-    let scale = 0.10; // Escala al 100% del tamaño original
+    let scale = 1.0;
     if let Some((sprite_x, sprite_y)) = sprite_position {
         let sprite_pos = (
             sprite_x as f32 + 0.5, // Centro de la celda
             sprite_y as f32 + 0.5
         );
-        render_fixed_sprite(framebuffer, player, sprite, sprite_pos, scale);
+    
+        // Seleccionar el frame actual de la animación
+        let sprite_index = frame % sprites.len(); // Modulo para repetir la animación
+        let current_sprite = &sprites[sprite_index];
+    
+        // Renderizar el frame actual
+        render_sprite(framebuffer, player, current_sprite, sprite_pos, scale);
     }
 }
 
@@ -176,39 +181,7 @@ pub fn render_minimap(framebuffer: &mut Framebuffer, maze: &[Vec<char>],
     render_player(framebuffer, player, minimap_cell_size, &maze);
 }
 
-fn render_billboard(
-    framebuffer: &mut Framebuffer, 
-    player: &Player, 
-    sprite: &DynamicImage, 
-    position: (f32, f32, f32), 
-    scale: f32 // Escala para ajustar el tamaño del sprite
-) {
-    let player_dir = (player.angle.cos(), player.angle.sin());
-    let sprite_dir = (position.0 - player.pos.x, position.1 - player.pos.y);
-    let angle = sprite_dir.1.atan2(sprite_dir.0) - player.angle;
-
-    // Convertir la posición 3D en coordenadas de pantalla
-    let screen_x = (framebuffer.width as f32 / 2.0) * (1.0 + angle / player.fov);
-    let screen_y = framebuffer.height as f32 / 2.0;
-
-    let sprite_width = (sprite.width() as f32 * scale) as usize;
-    let sprite_height = (sprite.height() as f32 * scale) as usize;
-
-    // Dibujar el sprite en la pantalla
-    for y in 0..sprite_height {
-        for x in 0..sprite_width {
-            let original_x = (x as f32 / scale) as u32;
-            let original_y = (y as f32 / scale) as u32;
-
-            let pixel = sprite.get_pixel(original_x, original_y);
-            if pixel[3] > 0 { // Solo dibujar píxeles no transparentes
-                framebuffer.point(screen_x + x as f32, screen_y + y as f32);
-            }
-        }
-    }
-}
-
-fn render_fixed_sprite(
+fn render_sprite(
     framebuffer: &mut Framebuffer, 
     player: &Player, 
     sprite: &DynamicImage, 
@@ -239,7 +212,10 @@ fn render_fixed_sprite(
                 let original_y = (y as f32 / (sprite_height as f32 / sprite.height() as f32)) as u32;
 
                 let pixel = sprite.get_pixel(original_x, original_y);
-                if pixel[3] > 0 { // Solo dibujar píxeles no transparentes
+                let Rgba(data) = pixel;
+                if data[3] > 0 {
+                    let color = ((data[0] as u32) << 16) | ((data[1] as u32) << 8) | (data[2] as u32);
+                    framebuffer.set_current_color(color);
                     framebuffer.point(screen_x + x as f32, screen_y + y as f32);
                 }
             }

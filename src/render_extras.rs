@@ -1,10 +1,10 @@
 use crate::framebuffer::Framebuffer;
 use crate::player::Player;
 
-use image::{DynamicImage, GenericImageView, Rgba};
+use image::{GenericImageView, Rgba};
 
 pub fn render_welcome_screen(framebuffer: &mut Framebuffer) {
-    let welcome_image = image::open("welcome.png").unwrap();
+    let welcome_image = image::open("images/welcome.png").unwrap();
     framebuffer.clear();
     framebuffer.set_background_color(0xdbf7f1); // Color de fondo para la bienvenida
 
@@ -33,7 +33,7 @@ pub fn render_welcome_screen(framebuffer: &mut Framebuffer) {
 }
 
 pub fn render_game_over_screen(framebuffer: &mut Framebuffer) {
-    let game_over_image = image::open("adios.png").unwrap();
+    let game_over_image = image::open("images/adios.png").unwrap();
     framebuffer.clear();
     framebuffer.set_background_color(0xe3dbf7); // Color de fondo para el fin del juego
 

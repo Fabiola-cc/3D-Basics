@@ -12,6 +12,7 @@ use std::io::BufReader;
 use std::time::{Instant, Duration};
 use minifb::{Key, Window, WindowOptions};
 use crate::player::Player;
+use image::DynamicImage;
 use crate::maze_render::{render_2Dmaze, render_3Dmaze, render_minimap};
 use crate::render_extras::{render_welcome_screen, render_game_over_screen, player_reaches_goal};
 
@@ -88,9 +89,14 @@ fn main() {
     let file = File::open("Fluffing-a-Duck.ogg").expect("Failed to open audio file");
     let file = BufReader::new(file); // Asegurar que el archivo es compatible
     let source = Decoder::new(file).expect("Failed to decode audio file");
-    
-    let sprite = image::open("key.png").unwrap();
 
+    let sprites: Vec<DynamicImage> = vec![
+        image::open("images/Key1.png").unwrap(), 
+        image::open("images/Key2.png").unwrap(), 
+        image::open("images/Key3.png").unwrap(),
+        image::open("images/Key4.png").unwrap(),
+    ];
+    
     // Reproducir el audio en un bucle infinito
     stream_handle.play_raw(source.convert_samples().repeat_infinite()).expect("Failed to play audio");
 
@@ -151,7 +157,7 @@ fn main() {
                 if mode == "2D" {
                     render_2Dmaze(&mut framebuffer, &maze, &player, sprite_position);
                 } else {
-                    render_3Dmaze(&mut framebuffer, &maze, &player, &sprite, sprite_position, frame);
+                    render_3Dmaze(&mut framebuffer, &maze, &player, &sprites, sprite_position, frame);
                     render_minimap(&mut framebuffer, &maze, &player, cell_size, 0.3, sprite_position);
                 }
                 
